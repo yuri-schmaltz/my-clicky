@@ -20,11 +20,31 @@ class CanvasWidget(Gtk.DrawingArea):
         self.image_surface = None
         self.original_pixbuf = None
         
-        # Tools: 'pen', 'highlighter', 'eraser'
+        # Tools: 'pen', 'highlighter', 'rectangle', 'circle', 'line', 'arrow', 'crop'
         self.current_tool = 'pen' 
         self.is_drawing = False
+        self.start_x = 0
+        self.start_y = 0
         self.last_x = 0
         self.last_y = 0
+
+        # Styles
+        self.stroke_color = Gdk.RGBA(1, 0, 0, 1) # Default Red
+        self.line_width = 3
+        self.fill_active = False
+        self.opacity = 1.0
+
+    def set_stroke_color(self, rgba):
+        self.stroke_color = rgba
+        
+    def set_line_width(self, width):
+        self.line_width = width
+        
+    def set_fill_active(self, active):
+        self.fill_active = active
+        
+    def set_opacity(self, opacity):
+        self.opacity = opacity
 
     def set_pixbuf(self, pixbuf):
         self.original_pixbuf = pixbuf
@@ -72,55 +92,218 @@ class CanvasWidget(Gtk.DrawingArea):
         pass
 
     def on_draw(self, widget, cr):
+        # 1. Draw the permanent surface (Image + Committed Drawings)
         if self.surface:
             cr.set_source_surface(self.surface, 0, 0)
             cr.paint()
+            
+        # 2. Draw the transient overlay (Shape being dragged / Crop selection)
+        if self.is_drawing and self.current_tool in ['rectangle', 'circle', 'line', 'arrow', 'crop']:
+            self.draw_overlay(cr)
+            
         return False
 
     def on_button_press(self, widget, event):
         if event.button == 1 and self.surface:
             self.is_drawing = True
+            
+            # Start point
+            self.start_x = event.x
+            self.start_y = event.y
             self.last_x = event.x
             self.last_y = event.y
+            
+            # For Pen/Highlighter, we start drawing immediately
+            if self.current_tool in ['pen', 'highlighter', 'eraser']:
+                pass # Handled in motion
+                
         return True
 
     def on_motion_notify(self, widget, event):
-        if self.is_drawing and self.surface:
-            self.draw_stroke(event.x, event.y)
-            self.last_x = event.x
-            self.last_y = event.y
+        self.last_x = event.x
+        self.last_y = event.y
+
+        if self.is_drawing:
+            if self.current_tool in ['pen', 'highlighter', 'eraser'] and self.surface:
+                self.draw_stroke(event.x, event.y)
+                # Update start for next segment
+                self.start_x = event.x
+                self.start_y = event.y
+            elif self.current_tool in ['rectangle', 'circle', 'line', 'arrow', 'crop']:
+                # Queue draw to update overlay
+                self.queue_draw()
+                
         return True
 
     def on_button_release(self, widget, event):
         if event.button == 1 and self.is_drawing:
             self.is_drawing = False
-            self.draw_stroke(event.x, event.y)
+            
+            if self.current_tool in ['rectangle', 'circle', 'line', 'arrow']:
+                self.commit_shape(event.x, event.y)
+            elif self.current_tool == 'crop':
+                self.apply_crop(event.x, event.y)
+            elif self.current_tool in ['pen', 'highlighter', 'eraser']:
+                self.draw_stroke(event.x, event.y) # Final segment
         return True
 
+    def apply_style(self, cr):
+        color = self.stroke_color
+        cr.set_source_rgba(color.red, color.green, color.blue, color.alpha * self.opacity)
+        cr.set_line_width(self.line_width)
+        cr.set_line_cap(cairo.LINE_CAP_ROUND)
+        cr.set_line_join(cairo.LINE_JOIN_ROUND)
+
+    def draw_arrow(self, cr, x1, y1, x2, y2):
+        cr.move_to(x1, y1)
+        cr.line_to(x2, y2)
+        cr.stroke()
+        
+        # Arrow head
+        angle = math.atan2(y2 - y1, x2 - x1)
+        arrow_len = 10 + self.line_width * 2
+        arrow_angle = math.pi / 6
+        
+        cr.move_to(x2, y2)
+        cr.line_to(x2 - arrow_len * math.cos(angle - arrow_angle),
+                   y2 - arrow_len * math.sin(angle - arrow_angle))
+        cr.move_to(x2, y2)
+        cr.line_to(x2 - arrow_len * math.cos(angle + arrow_angle),
+                   y2 - arrow_len * math.sin(angle + arrow_angle))
+        cr.stroke()
+
+    def draw_overlay(self, cr):
+        # Draw the shape currently being defined by start_x,y -> last_x,y
+        x = min(self.start_x, self.last_x)
+        y = min(self.start_y, self.last_y)
+        w = abs(self.start_x - self.last_x)
+        h = abs(self.start_y - self.last_y)
+        
+        if self.current_tool == 'crop':
+            # Dim everything
+            cr.set_source_rgba(0, 0, 0, 0.5)
+            cr.paint()
+            
+            # Clear the selection
+            cr.set_operator(cairo.OPERATOR_SOURCE)
+            cr.set_source_rgba(0, 0, 0, 0) # Transparent
+            cr.rectangle(x, y, w, h)
+            cr.fill()
+            
+            # Restore operator
+            cr.set_operator(cairo.OPERATOR_OVER)
+            
+            # White Border
+            cr.set_source_rgba(1, 1, 1, 1)
+            cr.set_line_width(1)
+            cr.set_dash([4.0, 4.0], 0)
+            cr.rectangle(x, y, w, h)
+            cr.stroke()
+            return
+
+        self.apply_style(cr)
+            
+        if self.current_tool == 'rectangle':
+            cr.rectangle(x, y, w, h)
+            if self.fill_active:
+                cr.fill_preserve()
+            cr.stroke()
+            
+        elif self.current_tool == 'circle':
+            cr.save()
+            cr.translate(x + w/2, y + h/2)
+            cr.scale(w/2, h/2)
+            cr.arc(0, 0, 1, 0, 2 * math.pi)
+            cr.restore()
+            if self.fill_active:
+                cr.fill_preserve()
+            cr.stroke()
+
+        elif self.current_tool == 'line':
+            cr.move_to(self.start_x, self.start_y)
+            cr.line_to(self.last_x, self.last_y)
+            cr.stroke()
+
+        elif self.current_tool == 'arrow':
+            self.draw_arrow(cr, self.start_x, self.start_y, self.last_x, self.last_y)
+
+    def commit_shape(self, end_x, end_y):
+        # Commit the shape to the permanent surface
+        cr = cairo.Context(self.surface)
+        x = min(self.start_x, end_x)
+        y = min(self.start_y, end_y)
+        w = abs(self.start_x - end_x)
+        h = abs(self.start_y - end_y)
+        
+        self.apply_style(cr)
+        
+        if self.current_tool == 'rectangle':
+            cr.rectangle(x, y, w, h)
+            if self.fill_active:
+                cr.fill_preserve()
+            cr.stroke()
+            
+        elif self.current_tool == 'circle':
+            cr.save()
+            cr.translate(x + w/2, y + h/2)
+            cr.scale(w/2, h/2)
+            cr.arc(0, 0, 1, 0, 2 * math.pi)
+            cr.restore()
+            if self.fill_active:
+                cr.fill_preserve()
+            cr.stroke()
+
+        elif self.current_tool == 'line':
+            cr.move_to(self.start_x, self.start_y)
+            cr.line_to(end_x, end_y)
+            cr.stroke()
+
+        elif self.current_tool == 'arrow':
+            self.draw_arrow(cr, self.start_x, self.start_y, end_x, end_y)
+            
+        self.queue_draw()
+
+    def apply_crop(self, end_x, end_y):
+        x = int(min(self.start_x, end_x))
+        y = int(min(self.start_y, end_y))
+        w = int(abs(self.start_x - end_x))
+        h = int(abs(self.start_y - end_y))
+        
+        if w < 10 or h < 10: return # Ignore tiny crops
+        
+        # Create new surface with cropped size
+        new_surface = self.get_window().create_similar_surface(
+            cairo.CONTENT_COLOR_ALPHA, w, h)
+            
+        cr = cairo.Context(new_surface)
+        cr.set_source_surface(self.surface, -x, -y)
+        cr.paint()
+        
+        self.surface = new_surface
+        self.set_size_request(w, h)
+        self.queue_draw()
+        
+        # We should notify parent to resize window? 
+        # For now, size request handles widget size, window might stay large.
+
     def draw_stroke(self, x, y):
+        # Assuming start_x is set
         cr = cairo.Context(self.surface)
         
         if self.current_tool == 'pen':
-            cr.set_source_rgba(1, 0, 0, 1) # Red
-            cr.set_line_width(3)
+            self.apply_style(cr)
         elif self.current_tool == 'highlighter':
-            cr.set_source_rgba(1, 1, 0, 0.4) # Yellow transparent
+            color = self.stroke_color
+            cr.set_source_rgba(color.red, color.green, color.blue, 0.4 * self.opacity)
             cr.set_line_width(20)
         elif self.current_tool == 'eraser':
-            # This is tricky with a single layer. 
-            # Ideally we'd just repaint the image region?
-            # For MVP, eraser might just paint white or "undo"?
-            # Let's leave eraser as "Paint transparent" which acts as erasing on a layer,
-            # but on a single composite, it reveals black.
-            # Better: Repaint original pixbuf content at that location? Too complex for MVP.
-            # Let's skip Eraser for MVP or make it simple "Blue Pen" for now as 'Pen 2'.
             cr.set_source_rgba(0, 0, 1, 1) # Blue
             cr.set_line_width(3)
 
         cr.set_line_cap(cairo.LINE_CAP_ROUND)
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
         
-        cr.move_to(self.last_x, self.last_y)
+        cr.move_to(self.start_x, self.start_y)
         cr.line_to(x, y)
         cr.stroke()
         

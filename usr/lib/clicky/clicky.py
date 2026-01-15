@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 
 gi.require_version("Gtk", "3.0")
 gi.require_version('XApp', '1.0')
-from gi.repository import Gtk, Gdk, Gio, XApp
+from gi.repository import Gtk, Gdk, Gio, XApp, GLib
 
 import utils
 from common import *
@@ -243,6 +243,83 @@ class MainWindow():
         btn_high.set_tooltip_text(_("Yellow Highlighter"))
         btn_high.connect("clicked", self.set_canvas_mode, "highlighter")
         toolbar.insert(btn_high, -1)
+        
+        # Shapes Separator
+        toolbar.insert(Gtk.SeparatorToolItem(), -1)
+
+        # Rectangle Tool
+        btn_rect = Gtk.ToolButton()
+        btn_rect.set_icon_name("media-stop-symbolic") # Square icon
+        btn_rect.set_tooltip_text(_("Rectangle"))
+        btn_rect.connect("clicked", self.set_canvas_mode, "rectangle")
+        toolbar.insert(btn_rect, -1)
+
+        # Circle Tool
+        btn_circ = Gtk.ToolButton()
+        btn_circ.set_icon_name("media-record-symbolic") # Circle icon
+        btn_circ.set_tooltip_text(_("Circle"))
+        btn_circ.connect("clicked", self.set_canvas_mode, "circle")
+        toolbar.insert(btn_circ, -1)
+        
+        # Crop Tool
+        btn_crop = Gtk.ToolButton()
+        btn_crop.set_icon_name("cut-symbolic") # Scissors/Cut
+        btn_crop.set_tooltip_text(_("Crop Image"))
+        btn_crop.connect("clicked", self.set_canvas_mode, "crop")
+        toolbar.insert(btn_crop, -1)
+        
+        toolbar.insert(Gtk.SeparatorToolItem(), -1)
+
+        # Line Tool
+        btn_line = Gtk.ToolButton()
+        btn_line.set_icon_name("list-add-symbolic")
+        btn_line.set_tooltip_text(_("Line"))
+        btn_line.connect("clicked", self.set_canvas_mode, "line")
+        toolbar.insert(btn_line, -1)
+
+        # Arrow Tool
+        btn_arrow = Gtk.ToolButton()
+        btn_arrow.set_icon_name("pan-end-symbolic")
+        btn_arrow.set_tooltip_text(_("Arrow"))
+        btn_arrow.connect("clicked", self.set_canvas_mode, "arrow")
+        toolbar.insert(btn_arrow, -1)
+
+        toolbar.insert(Gtk.SeparatorToolItem(), -1)
+
+        # --- Properties Bar ---
+        prop_box = Gtk.Box(spacing=10)
+        prop_box.set_margin_start(10)
+        prop_box.set_margin_end(10)
+        
+        # Color
+        color_btn = Gtk.ColorButton.new_with_rgba(Gdk.RGBA(1, 0, 0, 1))
+        color_btn.set_tooltip_text(_("Stroke Color"))
+        color_btn.connect("color-set", lambda b: self.canvas.set_stroke_color(b.get_rgba()))
+        prop_box.pack_start(color_btn, False, False, 0)
+        
+        # Line Width
+        adj = Gtk.Adjustment(3, 1, 50, 1, 5, 0)
+        width_spin = Gtk.SpinButton.new(adj, 1, 0)
+        width_spin.set_tooltip_text(_("Line Width"))
+        width_spin.connect("value-changed", lambda s: self.canvas.set_line_width(s.get_value()))
+        prop_box.pack_start(width_spin, False, False, 0)
+        
+        # Fill Toggle
+        fill_check = Gtk.CheckButton.new_with_label(_("Fill"))
+        fill_check.connect("toggled", lambda c: self.canvas.set_fill_active(c.get_active()))
+        prop_box.pack_start(fill_check, False, False, 0)
+        
+        # Opacity
+        prop_box.pack_start(Gtk.Label(label=_("Opacity:")), False, False, 0)
+        opacity_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0.1, 1.0, 0.1)
+        opacity_scale.set_value(1.0)
+        opacity_scale.set_size_request(100, -1)
+        opacity_scale.connect("value-changed", lambda s: self.canvas.set_opacity(s.get_value()))
+        prop_box.pack_start(opacity_scale, False, False, 0)
+
+        prop_box.show_all()
+        box.pack_start(prop_box, False, False, 0)
+        box.reorder_child(prop_box, 1)
 
         # Blue/Eraser (Placeholder for now)
         btn_blue = Gtk.ToolButton()
