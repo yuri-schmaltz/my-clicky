@@ -104,6 +104,10 @@ class MainWindow():
         self.window.set_icon_name("clicky")
         self.window.set_resizable(False)
         self.stack = self.builder.get_object("stack")
+        self.stack.set_homogeneous(True)
+        self.stack.set_vhomogeneous(True)
+        self.main_box = self.builder.get_object("main_box")
+        self.screenshot_box = self.builder.get_object("screenshot_box")
         self.radio_mode_screen = self.builder.get_object("radio_mode_screen")
         self.radio_mode_window = self.builder.get_object("radio_mode_window")
         self.radio_mode_area = self.builder.get_object("radio_mode_area")
@@ -133,6 +137,14 @@ class MainWindow():
         # self.builder.get_object("box_options").pack_start(spin, False, False, 0)
 
         self.window.show()
+
+        # Store initial window size to keep UI stable across captures
+        self.fixed_size = None
+        def store_initial_size():
+            self.fixed_size = self.window.get_size()
+            self.apply_fixed_layout()
+            return False
+        GLib.idle_add(store_initial_size)
 
         self.builder.get_object("go_back_button").hide()
 
@@ -322,10 +334,16 @@ class MainWindow():
         
         from canvas import CanvasWidget
         self.canvas = CanvasWidget()
-        self.canvas.set_size_request(400, 300) # Min size
         self.canvas.show()
-        
-        box.pack_start(self.canvas, True, True, 0)
+
+        self.scroller = Gtk.ScrolledWindow()
+        self.scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self.scroller.set_hexpand(True)
+        self.scroller.set_vexpand(True)
+        self.scroller.add(self.canvas)
+        self.scroller.show()
+
+        box.pack_start(self.scroller, True, True, 0)
         
         # Add Save Button explicitly here if needed, or reuse existing flow if there's a save button.
         # There isn't a save button in the UI XML shown (only placeholders or hidden).
@@ -337,11 +355,21 @@ class MainWindow():
         btn_save.connect("clicked", self.save_canvas)
         toolbar.insert(btn_save, -1)
 
+        if self.fixed_size:
+            self.apply_fixed_layout()
+
     def save_canvas(self, widget):
         if not self.canvas: return
         
         pixbuf = self.canvas.get_result_pixbuf()
         if pixbuf:
+            pictures_dir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)
+            if not pictures_dir:
+                pictures_dir = os.path.expanduser("~")
+            captures_dir_name = _("Captures")
+            captures_dir = os.path.join(pictures_dir, captures_dir_name)
+            os.makedirs(captures_dir, exist_ok=True)
+
             dialog = Gtk.FileChooserDialog(
                 title=_("Save Screenshot"),
                 parent=self.window,
@@ -352,6 +380,7 @@ class MainWindow():
                 Gtk.STOCK_SAVE, Gtk.ResponseType.OK
             )
             dialog.set_do_overwrite_confirmation(True)
+            dialog.set_current_folder(captures_dir)
             dialog.set_current_name(_("Screenshot.png"))
             
             response = dialog.run()
@@ -381,6 +410,26 @@ class MainWindow():
         
         self.application.send_notification("screenshot-taken", notification)
 
+    def apply_fixed_layout(self):
+        if not self.fixed_size:
+            return
+        width, height = self.fixed_size
+        # Keep stack/pages fixed to initial size to avoid jumps
+        self.stack.set_size_request(width, height)
+        if self.main_box is not None:
+            self.main_box.set_size_request(width, height)
+        if self.screenshot_box is not None:
+            self.screenshot_box.set_size_request(width, height)
+        if hasattr(self, 'scroller') and self.scroller is not None:
+            self.scroller.set_size_request(width, height)
+
+        geometry = Gdk.Geometry()
+        geometry.min_width = width
+        geometry.max_width = width
+        geometry.min_height = height
+        geometry.max_height = height
+        self.window.set_geometry_hints(None, geometry, Gdk.WindowHints.MIN_SIZE | Gdk.WindowHints.MAX_SIZE)
+
     def take_screenshot(self):
         try:
             options = Options(self.settings)
@@ -398,6 +447,9 @@ class MainWindow():
                 self.canvas.set_pixbuf(pixbuf)
                 
                 # Keep main window size stable (no resize to image)
+                self.canvas.set_size_request(400, 300)
+                if self.fixed_size:
+                    self.apply_fixed_layout()
                 
                 self.navigate_to("screenshot_page")
                 self.show_window()

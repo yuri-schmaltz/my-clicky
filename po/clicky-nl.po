@@ -100,6 +100,9 @@ msgstr "Opslaan"
 msgid "Save Screenshot"
 msgstr "Schermafbeelding opslaan"
 
+msgid "Captures"
+msgstr "Opnames"
+
 msgid "Screenshot.png"
 msgstr "Schermafbeelding.png"
 

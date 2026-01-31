@@ -100,6 +100,9 @@ msgstr "Сохранить"
 msgid "Save Screenshot"
 msgstr "Сохранить снимок экрана"
 
+msgid "Captures"
+msgstr "Снимки"
+
 msgid "Screenshot.png"
 msgstr "Снимок экрана.png"
 

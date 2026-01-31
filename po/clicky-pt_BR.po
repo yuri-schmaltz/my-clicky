@@ -100,6 +100,9 @@ msgstr "Salvar"
 msgid "Save Screenshot"
 msgstr "Salvar captura de tela"
 
+msgid "Captures"
+msgstr "Capturas"
+
 msgid "Screenshot.png"
 msgstr "Captura de tela.png"
 
