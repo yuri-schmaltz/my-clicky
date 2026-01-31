@@ -58,11 +58,11 @@ msgstr "Выход"
 msgid "Screenshot Failed"
 msgstr "Сбой снимка экрана"
 
-msgid "Red Pen"
-msgstr "Красная ручка"
+msgid "Pen"
+msgstr "Ручка"
 
-msgid "Yellow Highlighter"
-msgstr "Жёлтый маркер"
+msgid "Highlighter"
+msgstr "Маркер"
 
 msgid "Rectangle"
 msgstr "Прямоугольник"

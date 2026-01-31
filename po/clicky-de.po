@@ -58,11 +58,11 @@ msgstr "Beenden"
 msgid "Screenshot Failed"
 msgstr "Bildschirmfoto fehlgeschlagen"
 
-msgid "Red Pen"
-msgstr "Roter Stift"
+msgid "Pen"
+msgstr "Stift"
 
-msgid "Yellow Highlighter"
-msgstr "Gelber Textmarker"
+msgid "Highlighter"
+msgstr "Textmarker"
 
 msgid "Rectangle"
 msgstr "Rechteck"

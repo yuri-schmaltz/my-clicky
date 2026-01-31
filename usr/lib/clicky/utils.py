@@ -55,9 +55,18 @@ def select_area_interactive():
     window.set_app_paintable(True)
     window.set_decorated(False)
     window.set_keep_above(True)
+    window.set_skip_taskbar_hint(True)
+    window.set_skip_pager_hint(True)
     window.set_accept_focus(True)
     window.set_focus_on_map(True)
-    window.fullscreen()
+    visual = screen.get_rgba_visual()
+    if visual is not None and screen.is_composited():
+        window.set_visual(visual)
+    width = screen.get_width()
+    height = screen.get_height()
+    window.set_default_size(width, height)
+    window.resize(width, height)
+    window.move(0, 0)
     window.set_opacity(0.35)
 
     window.add_events(
@@ -70,9 +79,11 @@ def select_area_interactive():
     def on_draw(widget, cr):
         w = widget.get_allocated_width()
         h = widget.get_allocated_height()
-        cr.set_source_rgba(0, 0, 0, 0.4)
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_rgba(0, 0, 0, 0.35)
         cr.rectangle(0, 0, w, h)
         cr.fill()
+        cr.set_operator(cairo.OPERATOR_OVER)
 
         if selection["active"]:
             x = min(selection["start_x"], selection["end_x"])
@@ -155,6 +166,10 @@ def select_area_interactive():
 
     if grab_status == Gdk.GrabStatus.SUCCESS:
         seat.ungrab()
+
+    window.hide()
+    while Gtk.events_pending():
+        Gtk.main_iteration()
 
     window.destroy()
 

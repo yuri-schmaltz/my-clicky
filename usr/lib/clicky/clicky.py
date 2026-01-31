@@ -212,16 +212,15 @@ class MainWindow():
         
         # Pen Tool
         btn_pen = Gtk.ToolButton()
-        btn_pen.set_icon_name("document-edit-symbolic")
-        btn_pen.set_tooltip_text(_("Red Pen"))
+        btn_pen.set_icon_name("draw-freehand-symbolic")
+        btn_pen.set_tooltip_text(_("Pen"))
         btn_pen.connect("clicked", self.set_canvas_mode, "pen")
         toolbar.insert(btn_pen, -1)
         
         # Highlighter Tool
         btn_high = Gtk.ToolButton()
-        # Fallback icon if 'marker' not available
-        btn_high.set_icon_name("format-text-bold-symbolic") 
-        btn_high.set_tooltip_text(_("Yellow Highlighter"))
+        btn_high.set_icon_name("format-text-highlight-symbolic")
+        btn_high.set_tooltip_text(_("Highlighter"))
         btn_high.connect("clicked", self.set_canvas_mode, "highlighter")
         toolbar.insert(btn_high, -1)
         
@@ -230,21 +229,21 @@ class MainWindow():
 
         # Rectangle Tool
         btn_rect = Gtk.ToolButton()
-        btn_rect.set_icon_name("media-stop-symbolic") # Square icon
+        btn_rect.set_icon_name("draw-rectangle-symbolic")
         btn_rect.set_tooltip_text(_("Rectangle"))
         btn_rect.connect("clicked", self.set_canvas_mode, "rectangle")
         toolbar.insert(btn_rect, -1)
 
         # Circle Tool
         btn_circ = Gtk.ToolButton()
-        btn_circ.set_icon_name("media-record-symbolic") # Circle icon
+        btn_circ.set_icon_name("draw-ellipse-symbolic")
         btn_circ.set_tooltip_text(_("Circle"))
         btn_circ.connect("clicked", self.set_canvas_mode, "circle")
         toolbar.insert(btn_circ, -1)
         
         # Crop Tool
         btn_crop = Gtk.ToolButton()
-        btn_crop.set_icon_name("cut-symbolic") # Scissors/Cut
+        btn_crop.set_icon_name("edit-cut-symbolic")
         btn_crop.set_tooltip_text(_("Crop Image"))
         btn_crop.connect("clicked", self.set_canvas_mode, "crop")
         toolbar.insert(btn_crop, -1)
@@ -253,14 +252,14 @@ class MainWindow():
 
         # Line Tool
         btn_line = Gtk.ToolButton()
-        btn_line.set_icon_name("list-add-symbolic")
+        btn_line.set_icon_name("draw-line-symbolic")
         btn_line.set_tooltip_text(_("Line"))
         btn_line.connect("clicked", self.set_canvas_mode, "line")
         toolbar.insert(btn_line, -1)
 
         # Arrow Tool
         btn_arrow = Gtk.ToolButton()
-        btn_arrow.set_icon_name("pan-end-symbolic")
+        btn_arrow.set_icon_name("go-next-symbolic")
         btn_arrow.set_tooltip_text(_("Arrow"))
         btn_arrow.connect("clicked", self.set_canvas_mode, "arrow")
         toolbar.insert(btn_arrow, -1)
@@ -306,7 +305,7 @@ class MainWindow():
 
         # Blue/Eraser (Placeholder for now)
         btn_blue = Gtk.ToolButton()
-        btn_blue.set_icon_name("content-loading-symbolic")
+        btn_blue.set_icon_name("edit-clear-symbolic")
         btn_blue.set_tooltip_text(_("Blue Pen"))
         btn_blue.connect("clicked", self.set_canvas_mode, "eraser")
         toolbar.insert(btn_blue, -1)
@@ -398,13 +397,7 @@ class MainWindow():
                 
                 self.canvas.set_pixbuf(pixbuf)
                 
-                # Resize window to fit image (optional, mostly for usability)
-                w = pixbuf.get_width()
-                h = pixbuf.get_height()
-                # Limit max size
-                if w > 1200: w = 1200
-                if h > 800: h = 800
-                self.canvas.set_size_request(w, h)
+                # Keep main window size stable (no resize to image)
                 
                 self.navigate_to("screenshot_page")
                 self.show_window()

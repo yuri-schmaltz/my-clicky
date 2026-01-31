@@ -58,11 +58,11 @@ msgstr "Sair"
 msgid "Screenshot Failed"
 msgstr "Falha na captura de tela"
 
-msgid "Red Pen"
-msgstr "Caneta vermelha"
+msgid "Pen"
+msgstr "Caneta"
 
-msgid "Yellow Highlighter"
-msgstr "Marca-texto amarelo"
+msgid "Highlighter"
+msgstr "Marca texto"
 
 msgid "Rectangle"
 msgstr "Retângulo"

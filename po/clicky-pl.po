@@ -58,11 +58,11 @@ msgstr "Zakończ"
 msgid "Screenshot Failed"
 msgstr "Nie udało się wykonać zrzutu ekranu"
 
-msgid "Red Pen"
-msgstr "Czerwony długopis"
+msgid "Pen"
+msgstr "Długopis"
 
-msgid "Yellow Highlighter"
-msgstr "Żółty zakreślacz"
+msgid "Highlighter"
+msgstr "Zakreślacz"
 
 msgid "Rectangle"
 msgstr "Prostokąt"

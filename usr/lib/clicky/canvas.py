@@ -48,6 +48,16 @@ class CanvasWidget(Gtk.DrawingArea):
 
     def set_pixbuf(self, pixbuf):
         self.original_pixbuf = pixbuf
+        if pixbuf is None:
+            return
+
+        width = pixbuf.get_width()
+        height = pixbuf.get_height()
+
+        if self.surface is None or self.surface.get_width() != width or self.surface.get_height() != height:
+            self.create_surface(width, height)
+
+        self.redraw_canvas()
         self.queue_draw()
 
     def on_size_allocate(self, widget, allocation):
@@ -60,8 +70,12 @@ class CanvasWidget(Gtk.DrawingArea):
              self.redraw_canvas()
 
     def create_surface(self, width, height):
-        self.surface = self.get_window().create_similar_surface(
-            cairo.CONTENT_COLOR_ALPHA, width, height)
+        window = self.get_window()
+        if window is not None:
+            self.surface = window.create_similar_surface(
+                cairo.CONTENT_COLOR_ALPHA, width, height)
+        else:
+            self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
         
         # Clear surface
         cr = cairo.Context(self.surface)
@@ -295,10 +309,10 @@ class CanvasWidget(Gtk.DrawingArea):
         elif self.current_tool == 'highlighter':
             color = self.stroke_color
             cr.set_source_rgba(color.red, color.green, color.blue, 0.4 * self.opacity)
-            cr.set_line_width(20)
+            cr.set_line_width(self.line_width)
         elif self.current_tool == 'eraser':
-            cr.set_source_rgba(0, 0, 1, 1) # Blue
-            cr.set_line_width(3)
+            cr.set_operator(cairo.OPERATOR_CLEAR)
+            cr.set_line_width(self.line_width)
 
         cr.set_line_cap(cairo.LINE_CAP_ROUND)
         cr.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -306,6 +320,9 @@ class CanvasWidget(Gtk.DrawingArea):
         cr.move_to(self.start_x, self.start_y)
         cr.line_to(x, y)
         cr.stroke()
+
+        if self.current_tool == 'eraser':
+            cr.set_operator(cairo.OPERATOR_OVER)
         
         self.queue_draw()
 

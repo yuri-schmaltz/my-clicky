@@ -57,11 +57,11 @@ msgstr "Quitter"
 msgid "Screenshot Failed"
 msgstr "Échec de la capture d’écran"
 
-msgid "Red Pen"
-msgstr "Stylo rouge"
+msgid "Pen"
+msgstr "Stylo"
 
-msgid "Yellow Highlighter"
-msgstr "Surligneur jaune"
+msgid "Highlighter"
+msgstr "Surligneur"
 
 msgid "Rectangle"
 msgstr "Rectangle"

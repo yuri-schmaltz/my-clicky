@@ -58,11 +58,11 @@ msgstr "Salir"
 msgid "Screenshot Failed"
 msgstr "Error en la captura de pantalla"
 
-msgid "Red Pen"
-msgstr "Lápiz rojo"
+msgid "Pen"
+msgstr "Lápiz"
 
-msgid "Yellow Highlighter"
-msgstr "Resaltador amarillo"
+msgid "Highlighter"
+msgstr "Resaltador"
 
 msgid "Rectangle"
 msgstr "Rectángulo"

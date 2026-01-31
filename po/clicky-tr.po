@@ -58,11 +58,11 @@ msgstr "Çıkış"
 msgid "Screenshot Failed"
 msgstr "Ekran görüntüsü başarısız"
 
-msgid "Red Pen"
-msgstr "Kırmızı kalem"
+msgid "Pen"
+msgstr "Kalem"
 
-msgid "Yellow Highlighter"
-msgstr "Sarı fosforlu kalem"
+msgid "Highlighter"
+msgstr "Fosforlu kalem"
 
 msgid "Rectangle"
 msgstr "Dikdörtgen"

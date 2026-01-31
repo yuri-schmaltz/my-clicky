@@ -58,11 +58,11 @@ msgstr "Afsluiten"
 msgid "Screenshot Failed"
 msgstr "Schermafbeelding mislukt"
 
-msgid "Red Pen"
-msgstr "Rode pen"
+msgid "Pen"
+msgstr "Pen"
 
-msgid "Yellow Highlighter"
-msgstr "Gele markeerstift"
+msgid "Highlighter"
+msgstr "Markeerstift"
 
 msgid "Rectangle"
 msgstr "Rechthoek"

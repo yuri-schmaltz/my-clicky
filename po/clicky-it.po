@@ -58,11 +58,11 @@ msgstr "Esci"
 msgid "Screenshot Failed"
 msgstr "Schermata non riuscita"
 
-msgid "Red Pen"
-msgstr "Penna rossa"
+msgid "Pen"
+msgstr "Penna"
 
-msgid "Yellow Highlighter"
-msgstr "Evidenziatore giallo"
+msgid "Highlighter"
+msgstr "Evidenziatore"
 
 msgid "Rectangle"
 msgstr "Rettangolo"
