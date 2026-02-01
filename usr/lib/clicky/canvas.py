@@ -53,6 +53,7 @@ class CanvasWidget(Gtk.DrawingArea):
 
         width = pixbuf.get_width()
         height = pixbuf.get_height()
+        self.set_size_request(width, height)
 
         if self.surface is None or self.surface.get_width() != width or self.surface.get_height() != height:
             self.create_surface(width, height)

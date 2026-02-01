@@ -2,7 +2,7 @@
 
 # Configuration
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-KEY_Name="Clicky Area Screenshot"
+KEY_Name="Clicky Plus Area Screenshot"
 KEY_Command="$REPO_ROOT/clicky_cli.sh --area"
 KEY_Binding="<Shift><Super>s"
 SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"

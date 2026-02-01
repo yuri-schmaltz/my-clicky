@@ -241,7 +241,7 @@ class MainWindow():
         
         # Highlighter Tool
         btn_high = Gtk.ToolButton()
-        btn_high.set_icon_name("format-text-highlight-symbolic")
+        btn_high.set_icon_name("marker-symbolic")
         btn_high.set_tooltip_text(_("Highlighter"))
         btn_high.connect("clicked", self.set_canvas_mode, "highlighter")
         toolbar.insert(btn_high, -1)
@@ -289,9 +289,9 @@ class MainWindow():
         toolbar.insert(Gtk.SeparatorToolItem(), -1)
 
         # --- Properties Bar ---
-        prop_box = Gtk.Box(spacing=10)
-        prop_box.set_margin_start(10)
-        prop_box.set_margin_end(10)
+        prop_box = Gtk.Box(spacing=6)
+        prop_box.set_margin_start(4)
+        prop_box.set_margin_end(4)
         
         # Color
         color_btn = Gtk.ColorButton.new_with_rgba(Gdk.RGBA(1, 0, 0, 1))
@@ -312,16 +312,16 @@ class MainWindow():
         prop_box.pack_start(fill_check, False, False, 0)
         
         # Opacity
-        prop_box.pack_start(Gtk.Label(label=_("Opacity:")), False, False, 0)
         opacity_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0.1, 1.0, 0.1)
         opacity_scale.set_value(1.0)
-        opacity_scale.set_size_request(100, -1)
+        opacity_scale.set_size_request(80, -1)
+        opacity_scale.set_tooltip_text(_("Opacity"))
         opacity_scale.connect("value-changed", lambda s: self.canvas.set_opacity(s.get_value()))
         prop_box.pack_start(opacity_scale, False, False, 0)
 
         prop_box.show_all()
         prop_item = Gtk.ToolItem()
-        prop_item.set_expand(True)
+        prop_item.set_expand(False) # CRITICAL: Don't let propery box expand horizontally
         prop_item.add(prop_box)
         toolbar.insert(prop_item, -1)
 
@@ -346,14 +346,14 @@ class MainWindow():
         self.canvas = CanvasWidget()
         self.canvas.show()
 
-        self.scroller = Gtk.ScrolledWindow()
-        self.scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        self.scroller.set_hexpand(True)
-        self.scroller.set_vexpand(True)
-        self.scroller.add(self.canvas)
-        self.scroller.show()
+        # Container for the canvas - NO EXPAND, use centering box
+        self.preview_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.preview_container.set_valign(Gtk.Align.CENTER)
+        self.preview_container.set_halign(Gtk.Align.CENTER)
+        self.preview_container.add(self.canvas)
+        self.preview_container.show_all()
 
-        box.pack_start(self.scroller, True, True, 0)
+        box.pack_start(self.preview_container, True, True, 0)
         
         # Add Save Button explicitly here if needed, or reuse existing flow if there's a save button.
         # There isn't a save button in the UI XML shown (only placeholders or hidden).
@@ -404,6 +404,7 @@ class MainWindow():
     def go_back(self, widget):
         self.navigate_to("main_page")
         if self.fixed_size:
+            self.apply_fixed_layout()
             self.window.resize(self.fixed_size[0], self.fixed_size[1])
 
     def copy_to_clipboard(self, pixbuf):
@@ -422,35 +423,55 @@ class MainWindow():
         
         self.application.send_notification("screenshot-taken", notification)
 
-    def apply_fixed_layout(self):
-        if not self.fixed_size:
+    def apply_fixed_layout(self, width=None, height=None):
+        if width is None or height is None:
+            # Reverting to Main Page (Compact)
+            if not self.fixed_size:
+                return
+            width, height = self.fixed_size
+            is_main = True
+        else:
+            is_main = False
+        
+        # Reset constraints before applying new ones
+        self.window.set_geometry_hints(None, None, 0)
+        
+        if is_main:
+            self.window.set_resizable(False)
+            self.stack.set_size_request(-1, -1)
+            self.main_content_box.set_size_request(-1, -1)
+            self.window.resize(width, height)
             return
-        width, height = self.fixed_size
-        # Keep stack/pages fixed to initial size to avoid jumps
-        self.stack.set_size_request(width, height)
-        if self.main_content_box is not None:
-            self.main_content_box.set_size_request(width, height)
-        if self.screenshot_box is not None:
-            self.screenshot_box.set_size_request(width, height)
-        if hasattr(self, 'scroller') and self.scroller is not None:
-            self.scroller.set_size_request(width, height)
 
+        # Screenshot Page Logic
+        self.current_fixed_size = (width, height)
+        
+        if hasattr(self, 'preview_container') and self.preview_container is not None:
+             self.preview_container.set_size_request(width, height)
+            
+        if hasattr(self, 'canvas'):
+            self.canvas.set_size_request(width, height)
+
+        ui_height_offset = 120 # Header + Toolbar buffer
+        
+        target_window_width = max(width, 600) # Minimum to fit toolbar
+        
         geometry = Gdk.Geometry()
-        geometry.min_width = width
-        geometry.max_width = width
-        geometry.min_height = height
-        geometry.max_height = height
+        geometry.min_width = target_window_width
+        geometry.max_width = target_window_width
+        geometry.min_height = height + ui_height_offset
+        geometry.max_height = height + ui_height_offset
+        
+        self.window.set_resizable(True)
         self.window.set_geometry_hints(None, geometry, Gdk.WindowHints.MIN_SIZE | Gdk.WindowHints.MAX_SIZE)
+        self.window.resize(target_window_width, height + ui_height_offset)
+        self.window.set_resizable(False)
 
     def on_window_size_allocate(self, widget, allocation):
         if self.fixed_size is None:
             self.fixed_size = (allocation.width, allocation.height)
             self.apply_fixed_layout()
             return
-
-        fixed_width, fixed_height = self.fixed_size
-        if allocation.width != fixed_width or allocation.height != fixed_height:
-            self.window.resize(fixed_width, fixed_height)
     def take_screenshot(self):
         try:
             options = Options(self.settings)
@@ -465,12 +486,26 @@ class MainWindow():
                 if not hasattr(self, 'canvas'):
                     self.setup_canvas_ui()
                 
-                self.canvas.set_pixbuf(pixbuf)
+                # Scaling Threshold (1280px)
+                display_pixbuf = pixbuf
+                if pixbuf.get_width() >= 1920:
+                    # Strictly 50% for 1080p and above
+                    target_w = pixbuf.get_width() // 2
+                    target_h = pixbuf.get_height() // 2
+                    display_pixbuf = pixbuf.scale_simple(target_w, target_h, GdkPixbuf.InterpType.BILINEAR)
+                elif pixbuf.get_width() > 1280:
+                    # Proportional scaling for intermediate sizes
+                    target_w = pixbuf.get_width() // 2
+                    target_h = pixbuf.get_height() // 2
+                    display_pixbuf = pixbuf.scale_simple(target_w, target_h, GdkPixbuf.InterpType.BILINEAR)
                 
-                # Keep main window size stable (no resize to image)
-                self.canvas.set_size_request(400, 300)
-                if self.fixed_size:
-                    self.apply_fixed_layout()
+                self.canvas.set_pixbuf(display_pixbuf)
+                
+                # Set window size to match preview (with some buffer)
+                target_w = display_pixbuf.get_width()
+                target_h = display_pixbuf.get_height()
+                
+                self.apply_fixed_layout(target_w, target_h)
                 
                 self.navigate_to("screenshot_page")
                 self.show_window()
@@ -545,6 +580,12 @@ class MainWindow():
         elif event.keyval == Gdk.KEY_F11:
              # F11..
              pass
+        elif self.stack.get_visible_child_name() == "screenshot_page":
+            alt = modifier == Gdk.ModifierType.MOD1_MASK
+            if event.keyval == Gdk.KEY_BackSpace:
+                self.navigate_to("main_page")
+            elif alt and event.keyval == Gdk.KEY_Left:
+                self.navigate_to("main_page")
 
 if __name__ == "__main__":
     application = MyApplication("org.x.clicky", Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
