@@ -104,15 +104,15 @@ class MainWindow():
         self.window.set_icon_name("clicky")
         self.window.set_resizable(False)
         self.stack = self.builder.get_object("stack")
-        self.stack.set_homogeneous(True)
-        self.stack.set_vhomogeneous(True)
-        self.main_box = self.builder.get_object("main_box")
+        self.stack.set_homogeneous(False)
+        self.main_content_box = self.builder.get_object("main_content_box")
         self.screenshot_box = self.builder.get_object("screenshot_box")
-        self.radio_mode_screen = self.builder.get_object("radio_mode_screen")
-        self.radio_mode_window = self.builder.get_object("radio_mode_window")
-        self.radio_mode_area = self.builder.get_object("radio_mode_area")
-        self.checkbox_pointer = self.builder.get_object("checkbox_pointer")
-        self.checkbox_shadow = self.builder.get_object("checkbox_shadow")
+        
+        self.toggle_mode_screen = self.builder.get_object("toggle_mode_screen")
+        self.toggle_mode_window = self.builder.get_object("toggle_mode_window")
+        self.toggle_mode_area = self.builder.get_object("toggle_mode_area")
+        
+        self.switch_pointer = self.builder.get_object("switch_pointer")
         self.spin_delay = self.builder.get_object("spin_delay")
 
         # CSS
@@ -126,17 +126,20 @@ class MainWindow():
         Gtk.Settings.get_default().set_property("gtk-application-prefer-dark-theme", prefer_dark_mode)
 
         mode = self.settings.get_string("capture-mode")
-        self.builder.get_object(f"radio_mode_{mode}").set_active(True)
+        if mode == "screen": self.toggle_mode_screen.set_active(True)
+        elif mode == "window": self.toggle_mode_window.set_active(True)
+        elif mode == "area": self.toggle_mode_area.set_active(True)
 
-        self.settings.bind("include-pointer", self.checkbox_pointer, "active", Gio.SettingsBindFlags.DEFAULT)
-        self.settings.bind("add-shadow", self.checkbox_shadow, "active", Gio.SettingsBindFlags.DEFAULT)
+        self.settings.bind("include-pointer", self.switch_pointer, "active", Gio.SettingsBindFlags.DEFAULT)
         self.settings.bind("delay", self.spin_delay, "value", Gio.SettingsBindFlags.DEFAULT)
+        # self.settings.bind("enable-sound", self.checkbox_sound, "active", Gio.SettingsBindFlags.DEFAULT) # Removed from UI
 
         # import xapp.SettingsWidgets
         # spin = xapp.SettingsWidgets.SpinButton(_("Delay"), units="seconds")
         # self.builder.get_object("box_options").pack_start(spin, False, False, 0)
 
         self.window.show()
+        self.builder.get_object("button_take_screenshot").grab_focus()
 
         # Store initial window size to keep UI stable across captures
         self.fixed_size = None
@@ -153,21 +156,26 @@ class MainWindow():
         self.window.connect("size-allocate", self.on_window_size_allocate)
         self.builder.get_object("go_back_button").connect("clicked", self.go_back)
         self.builder.get_object("button_take_screenshot").connect("clicked", self.start_screenshot)
-        self.radio_mode_screen.connect("toggled", self.on_capture_mode_toggled)
-        self.radio_mode_window.connect("toggled", self.on_capture_mode_toggled)
-        self.radio_mode_area.connect("toggled", self.on_capture_mode_toggled)
+        self.toggle_mode_screen.connect("toggled", self.on_capture_mode_toggled)
+        self.toggle_mode_window.connect("toggled", self.on_capture_mode_toggled)
+        self.toggle_mode_area.connect("toggled", self.on_capture_mode_toggled)
+
+        self.builder.get_object("button_help").connect("clicked", self.open_keyboard_shortcuts)
+        self.builder.get_object("button_about").connect("clicked", self.open_about)
 
     def get_capture_mode(self):
-        if self.radio_mode_screen.get_active():
+        if self.toggle_mode_screen.get_active():
             mode = CAPTURE_MODE_SCREEN
-        elif self.radio_mode_window.get_active():
+        elif self.toggle_mode_window.get_active():
             mode = CAPTURE_MODE_WINDOW
         else:
             mode = CAPTURE_MODE_AREA
         return mode
 
     def on_capture_mode_toggled(self, widget):
-        self.settings.set_string("capture-mode", self.get_capture_mode())
+        if widget.get_active():
+            self.settings.set_string("capture-mode", self.get_capture_mode())
+      #  self.settings.set_string("capture-mode", self.get_capture_mode())
 
     def start_screenshot(self, widget):
         self.hide_window()
@@ -394,6 +402,8 @@ class MainWindow():
 
     def go_back(self, widget):
         self.navigate_to("main_page")
+        if self.fixed_size:
+            self.window.resize(self.fixed_size[0], self.fixed_size[1])
 
     def copy_to_clipboard(self, pixbuf):
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
@@ -417,8 +427,8 @@ class MainWindow():
         width, height = self.fixed_size
         # Keep stack/pages fixed to initial size to avoid jumps
         self.stack.set_size_request(width, height)
-        if self.main_box is not None:
-            self.main_box.set_size_request(width, height)
+        if self.main_content_box is not None:
+            self.main_content_box.set_size_request(width, height)
         if self.screenshot_box is not None:
             self.screenshot_box.set_size_request(width, height)
         if hasattr(self, 'scroller') and self.scroller is not None:

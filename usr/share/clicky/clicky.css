@@ -1,0 +1,43 @@
+.mode-selection button {
+    background: transparent;
+    border: 1px solid alpha(@borders, 0.5);
+    transition: all 200ms ease;
+    border-radius: 8px;
+}
+
+.mode-selection button:hover {
+    background: alpha(@theme_fg_color, 0.05);
+}
+
+.mode-selection button:active,
+.mode-selection button:checked {
+    background: alpha(@theme_selected_bg_color, 0.1);
+    border-color: @theme_selected_bg_color;
+    box-shadow: inset 0 0 0 1px @theme_selected_bg_color;
+}
+
+.mode-selection button label {
+    font-weight: bold;
+    font-size: 11pt;
+}
+
+.mode-selection button image {
+    opacity: 0.8;
+}
+
+.mode-selection button:checked image {
+    opacity: 1.0;
+}
+
+list {
+    border-radius: 8px;
+    background-color: alpha(@theme_base_color, 0.5);
+}
+
+list row {
+    border-bottom: 1px solid alpha(@borders, 0.3);
+}
+
+list row:last-child {
+    border-bottom: none;
+}
